@@ -1,0 +1,14 @@
+{
+  "name": "uniquecollection-store",
+  "version": "1.0.0",
+  "description": "UniqueCollection - Premium eCommerce Store with Live Drag-and-Drop Image Uploader, Product Editor, WhatsApp Ordering & Help Support",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "npx serve ."
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}
