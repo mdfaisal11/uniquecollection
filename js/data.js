@@ -319,6 +319,7 @@ var DEFAULT_PRODUCTS = [
 var DEFAULT_USERS = [
   {
     id: "user-admin",
+    username: "admin",
     name: "Md Faisal (Admin)",
     email: "mdfaisal2202@gmail.com",
     phone: "+977 9708425276",
@@ -458,8 +459,8 @@ var FAQ_DATA = [
     a: "Yes! Click the 'Customer Sign In / Register' button to create your free account. Once registered, all your orders are saved to your profile with live tracking badges. You can also order as a guest."
   },
   {
-    q: "How do I login as an Admin and manage the store?",
-    a: "Click 'Admin Login' at the top right. Enter username 'admin' and password 'admin123'. You will gain full access to view customer orders, customer phone numbers, addresses, update order statuses, add products, and drag-and-drop merchandise photos!"
+    q: "Can I request custom luxury items or bulk orders?",
+    a: "Yes! Contact Md Faisal directly on WhatsApp at +977 9708425276 or email mdfaisal2202@gmail.com with photos or requirements of any luxury watches, apparel, or footwear you desire. We provide bespoke sourcing and verified genuine goods."
   },
   {
     q: "Is Cash on Delivery (COD) available?",

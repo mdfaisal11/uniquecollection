@@ -77,6 +77,27 @@ function loadStoreData() {
     // Users
     const savedUsers = localStorage.getItem(STORAGE_KEY_USERS);
     users = savedUsers ? JSON.parse(savedUsers) : [...(window.DEFAULT_USERS || DEFAULT_USERS)];
+    // Ensure admin user exists with username 'admin'
+    const hasAdmin = users.some(u => u.role === 'admin');
+    if (!hasAdmin) {
+      users.unshift({
+        id: 'user-admin',
+        username: 'admin',
+        name: 'Md Faisal (Admin)',
+        email: 'mdfaisal2202@gmail.com',
+        phone: '+977 9708425276',
+        role: 'admin',
+        password: 'admin123',
+        createdAt: '2026-01-10T10:00:00Z'
+      });
+      saveUsersToStorage();
+    } else {
+      const adminObj = users.find(u => u.role === 'admin');
+      if (adminObj && !adminObj.username) {
+        adminObj.username = 'admin';
+        saveUsersToStorage();
+      }
+    }
     if (!savedUsers) saveUsersToStorage();
 
     // Orders
@@ -139,50 +160,41 @@ function saveReviewsToStorage() {
 
 function updateAuthUI() {
   const userBtn = document.getElementById("navUserBtn");
-  const adminBtn = document.getElementById("navAdminBtn");
   const adminBadge = document.getElementById("adminStatusBanner");
 
   if (userBtn) {
-    if (currentUser && currentUser.role === 'client') {
+    if (isAdminAuthenticated) {
+      userBtn.className = "flex items-center text-xs font-semibold";
+      userBtn.innerHTML = `
+        <div class="flex items-center gap-1.5 text-xs font-black text-slate-950 bg-amber-500 hover:bg-amber-400 px-3.5 py-2 rounded-xl transition-all shadow-md">
+          <span class="text-sm">👑</span>
+          <span>Admin Studio</span>
+        </div>
+      `;
+      userBtn.title = "Open Admin Management Studio";
+      userBtn.onclick = openAdminDashboard;
+    } else if (currentUser && currentUser.role === 'client') {
+      userBtn.className = "flex items-center text-xs font-semibold";
       userBtn.innerHTML = `
         <div class="flex items-center gap-2 text-xs font-bold text-slate-900 bg-amber-100 hover:bg-amber-200 px-3.5 py-2 rounded-xl transition-all shadow-sm">
           <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
           <span class="truncate max-w-[110px]">Hi, ${currentUser.name.split(' ')[0]}</span>
         </div>
       `;
+      userBtn.title = "Customer Profile & Orders";
       userBtn.onclick = openClientPortal;
     } else {
+      userBtn.className = "flex items-center text-xs font-semibold";
       userBtn.innerHTML = `
         <div class="flex items-center gap-1.5 text-xs font-bold text-slate-800 hover:text-amber-600 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-all shadow-sm">
           <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
           </svg>
-          <span>Customer Sign In</span>
+          <span>Sign In</span>
         </div>
       `;
+      userBtn.title = "Customer & Admin Sign In";
       userBtn.onclick = () => openAuthModal('login');
-    }
-  }
-
-  if (adminBtn) {
-    if (isAdminAuthenticated) {
-      adminBtn.className = "px-3.5 py-2 rounded-xl text-xs font-black bg-amber-500 text-slate-950 hover:bg-amber-400 transition-all shadow-md flex items-center gap-1.5";
-      adminBtn.innerHTML = `
-        <svg class="w-4 h-4 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-        </svg>
-        <span>Admin Studio</span>
-      `;
-      adminBtn.onclick = openAdminDashboard;
-    } else {
-      adminBtn.className = "px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-900 text-amber-400 hover:bg-slate-800 transition-all shadow-sm flex items-center gap-1.5 border border-slate-700";
-      adminBtn.innerHTML = `
-        <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-        </svg>
-        <span>Admin Login</span>
-      `;
-      adminBtn.onclick = () => openAuthModal('admin');
     }
   }
 
@@ -200,23 +212,22 @@ function openAuthModal(tab = 'login') {
   openModal('authModal');
 }
 
-function switchAuthTab(tab) {
+function switchAuthTab(tab = 'login') {
+  if (tab === 'admin') tab = 'login';
   const loginTab = document.getElementById("authTabLogin");
   const registerTab = document.getElementById("authTabRegister");
-  const adminTab = document.getElementById("authTabAdmin");
 
   const loginForm = document.getElementById("authFormLogin");
   const registerForm = document.getElementById("authFormRegister");
-  const adminForm = document.getElementById("authFormAdmin");
 
-  [loginTab, registerTab, adminTab].forEach(b => {
+  [loginTab, registerTab].forEach(b => {
     if (b) {
       b.classList.remove("border-amber-500", "text-amber-600", "font-bold");
       b.classList.add("border-transparent", "text-slate-500");
     }
   });
 
-  [loginForm, registerForm, adminForm].forEach(f => {
+  [loginForm, registerForm].forEach(f => {
     if (f) f.classList.add("hidden");
   });
 
@@ -226,46 +237,100 @@ function switchAuthTab(tab) {
   } else if (tab === 'register') {
     if (registerTab) registerTab.classList.add("border-amber-500", "text-amber-600", "font-bold");
     if (registerForm) registerForm.classList.remove("hidden");
-  } else if (tab === 'admin') {
-    if (adminTab) adminTab.classList.add("border-amber-500", "text-amber-600", "font-bold");
-    if (adminForm) adminForm.classList.remove("hidden");
   }
 }
 
-// Client Login Handler
-function handleClientLogin(e) {
+// Unified Login Handler (Customer & Admin via same portal)
+function handleUnifiedLogin(e) {
   e.preventDefault();
-  const email = document.getElementById("loginEmail").value.trim().toLowerCase();
-  const password = document.getElementById("loginPassword").value;
+  const inputEl = document.getElementById("loginEmail");
+  const passEl = document.getElementById("loginPassword");
+  if (!inputEl || !passEl) return;
 
-  const user = users.find(u => u.email.toLowerCase() === email && u.password === password && u.role === 'client');
+  const identifier = inputEl.value.trim().toLowerCase();
+  const password = passEl.value;
 
-  if (user) {
+  // 1. Check Admin Credentials:
+  // Admin username 'admin' OR email 'mdfaisal2202@gmail.com' and password 'admin123'
+  const adminMatch = users.find(u => 
+    u.role === 'admin' && 
+    (u.email.toLowerCase() === identifier || (u.username && u.username.toLowerCase() === identifier) || identifier === 'admin') &&
+    u.password === password
+  ) || (
+    (identifier === 'admin' || identifier === 'mdfaisal2202@gmail.com') && 
+    password === 'admin123'
+  );
+
+  if (adminMatch) {
+    isAdminAuthenticated = true;
+    localStorage.setItem(STORAGE_KEY_ADMIN_SESSION, "true");
     currentUser = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
+      id: typeof adminMatch === 'object' && adminMatch.id ? adminMatch.id : "user-admin",
+      username: "admin",
+      name: "Md Faisal (Admin)",
+      email: "mdfaisal2202@gmail.com",
+      phone: "+977 9708425276",
+      role: 'admin'
+    };
+    localStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentUser));
+    updateAuthUI();
+    renderProducts();
+    closeModal('authModal');
+    showToast("👑 Welcome Admin Faisal! Opening Admin Management Studio...", "success");
+    e.target.reset();
+    setTimeout(openAdminDashboard, 300);
+    return;
+  }
+
+  // 2. Check Customer Credentials:
+  const customerMatch = users.find(u => 
+    u.role === 'client' && 
+    (u.email.toLowerCase() === identifier || (u.phone && u.phone.replace(/[\s+-]/g, '') === identifier.replace(/[\s+-]/g, ''))) && 
+    u.password === password
+  );
+
+  if (customerMatch) {
+    isAdminAuthenticated = false;
+    localStorage.removeItem(STORAGE_KEY_ADMIN_SESSION);
+    currentUser = {
+      id: customerMatch.id,
+      name: customerMatch.name,
+      email: customerMatch.email,
+      phone: customerMatch.phone,
       role: 'client'
     };
     localStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentUser));
     updateAuthUI();
+    renderProducts();
     closeModal('authModal');
-    showToast(`Welcome back, ${user.name}! You can now order directly. 🌟`, "success");
+    showToast(`Welcome back, ${customerMatch.name}! 🌟`, "success");
     e.target.reset();
-  } else {
-    showToast("Invalid customer email or password. Please check your credentials.", "error");
+    return;
   }
+
+  showToast("Invalid credentials. Please verify your email/username and password.", "error");
 }
+
+// Backward compatibility aliases
+var handleClientLogin = handleUnifiedLogin;
+var handleAdminLogin = handleUnifiedLogin;
 
 // Client Registration Handler
 function handleClientRegister(e) {
   e.preventDefault();
-  const name = document.getElementById("regName").value.trim();
-  const email = document.getElementById("regEmail").value.trim().toLowerCase();
-  const phone = document.getElementById("regPhone").value.trim();
-  const password = document.getElementById("regPassword").value;
-  const confirmPassword = document.getElementById("regConfirmPassword").value;
+  const nameInput = document.getElementById("regName");
+  const emailInput = document.getElementById("regEmail");
+  const phoneInput = document.getElementById("regPhone");
+  const passInput = document.getElementById("regPassword");
+  const confirmInput = document.getElementById("regConfirmPassword");
+
+  if (!nameInput || !emailInput || !passInput || !confirmInput) return;
+
+  const name = nameInput.value.trim();
+  const email = emailInput.value.trim().toLowerCase();
+  const phone = phoneInput ? phoneInput.value.trim() : "+977";
+  const password = passInput.value;
+  const confirmPassword = confirmInput.value;
 
   if (password !== confirmPassword) {
     showToast("Passwords do not match!", "error");
@@ -300,52 +365,10 @@ function handleClientRegister(e) {
   localStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentUser));
 
   updateAuthUI();
+  renderProducts();
   closeModal('authModal');
   showToast(`Account created successfully! Welcome to UniqueCollection, ${name}! 🎉`, "success");
   e.target.reset();
-}
-
-// 1-Click Quick Fill for Admin Login
-function quickAdminLoginFill() {
-  const emailInput = document.getElementById("adminEmail");
-  const passInput = document.getElementById("adminPassword");
-  if (emailInput) emailInput.value = "admin";
-  if (passInput) passInput.value = "admin123";
-  showToast("Admin credentials filled! Click 'Unlock Admin Studio' below.", "info");
-}
-
-// Admin Login Handler
-function handleAdminLogin(e) {
-  e.preventDefault();
-  const emailOrUser = document.getElementById("adminEmail").value.trim().toLowerCase();
-  const password = document.getElementById("adminPassword").value;
-
-  const admin = users.find(u => 
-    u.role === 'admin' && 
-    (u.email.toLowerCase() === emailOrUser || emailOrUser === 'admin') && 
-    u.password === password
-  );
-
-  if (admin) {
-    isAdminAuthenticated = true;
-    localStorage.setItem(STORAGE_KEY_ADMIN_SESSION, "true");
-    currentUser = {
-      id: admin.id,
-      name: admin.name,
-      email: admin.email,
-      phone: admin.phone,
-      role: 'admin'
-    };
-    localStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentUser));
-    updateAuthUI();
-    renderProducts();
-    closeModal('authModal');
-    showToast("🔒 Admin Authenticated! Opening Management Studio...", "success");
-    e.target.reset();
-    setTimeout(openAdminDashboard, 300);
-  } else {
-    showToast("Access Denied: Incorrect Admin Credentials. (Default: admin / admin123)", "error");
-  }
 }
 
 // User Logout
@@ -561,7 +584,7 @@ function renderOrderTrackingCard(order, container) {
 
 function openAdminDashboard() {
   if (!isAdminAuthenticated) {
-    openAuthModal('admin');
+    openAuthModal('login');
     return;
   }
 
@@ -1447,7 +1470,7 @@ var currentFeatureList = [];
 
 function openAddProductModal() {
   if (!isAdminAuthenticated) {
-    openAuthModal('admin');
+    openAuthModal('login');
     return;
   }
 
@@ -1491,7 +1514,7 @@ function openAddProductModal() {
 
 function openEditProductModal(productId) {
   if (!isAdminAuthenticated) {
-    openAuthModal('admin');
+    openAuthModal('login');
     return;
   }
 
